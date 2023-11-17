@@ -10,6 +10,10 @@ routes$indieVelo_Grand_Day_Out.gpx <- list(cuts = c(
   4395,4437,4971,5110,5232,5279,5299,5409,5513,5575,5862,6033
 ))
 
+routes$indieVelo_So_Near_Yet_So_Far.gpx <- list(cuts = c(457, 3689))
+
+routes$indieVelo_Northern_Hill_Climb.gpx <- list(cuts = c(1, 1378))
+
 make_outputs <- function(x, routes) {
   d <- gpxr::load_track_points(file.path("gpx", x))
   
