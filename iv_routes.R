@@ -111,8 +111,9 @@ line_version <- lapply(fs, make_segments, routes = routes)
 
 spatial_svg <- function(polygons_sf, lines_sf) {
   
-  par(mar = c(0,0,0,0))
-  plot(sf::st_buffer(sf::st_geometry(lines_sf), dist = units::set_units(500, "m")), border = NA)
+  par(mar = c(0,0,0,0), family = "Arial Unicode MS")
+  plot(sf::st_buffer(sf::st_geometry(lines_sf), dist = units::set_units(100, "m")), border = NA)
+  
   for(col_choose in 1:max(polygons_sf$plot_order)) {
     
     dat <- dplyr::filter(polygons_sf, plot_order == col_choose)
@@ -127,17 +128,33 @@ spatial_svg <- function(polygons_sf, lines_sf) {
     sf::st_point(c(sf::st_coordinates(lines_sf)[1,1], sf::st_coordinates(lines_sf)[1,2])),
     crs = sf::st_crs(lines_sf))
   
-  plot(start_point, pch = 23, bg = "lightgreen", cex = 1.5, add = TRUE)
-  plot(start_point, pch = 23, bg = "lightgreen", cex = .8, add = TRUE)
+  plot(start_point, pch = '\u25b7', cex = 3, add = TRUE)
+  plot(start_point, pch = '\u25b7', cex = 1.5, add = TRUE)
   
-  text(sf::st_coordinates(start_point), "start", pos = 4)
+  # text(sf::st_coordinates(start_point), "start", pos = 4)
 }
 
 polygons_sf <- sf::read_sf("base_map/gilbert_island_polygons.geojson")
+
+orig_colors <- c("#29902EFF", 
+                 "#36963BFF", 
+                 "#A6A6A6FF",
+                 "#5B95022E", 
+                 "#CECECEFF", 
+                 "#DFDFDFFA", 
+                 "#623A14B0", 
+                 "#F6C18FFF",
+                 "#78BCFEFF", 
+                 "#78BCFEEE",
+                 "#ECD5BFE7")
+
+polygons_sf <- mutate(polygons_sf, fill = case_when(fill == "#F6C18FFF" ~ "#943c1e",
+                                                    fill == "#ECD5BFE7" ~ "#a98823",
+                                                    fill == "#36963BFF" ~ "#3fa644",
+                                                    TRUE ~ fill))
 
 for(i in 1:length(fs)) {
   svglite::svglite(file.path("svg", gsub(".gpx", "_map.svg", fs[i])), width = 4, height = 4)
   spatial_svg(polygons_sf, line_version[[i]])
   dev.off()
 }
-
