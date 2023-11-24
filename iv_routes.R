@@ -14,6 +14,8 @@ routes$indieVelo_So_Near_Yet_So_Far.gpx <- list(cuts = c(457, 3689))
 
 routes$indieVelo_Northern_Hill_Climb.gpx <- list(cuts = c(1, 1378))
 
+routes$indieVelo_Base_Camp.gpx <- list(cuts = c(6, 1627))
+
 make_outputs <- function(x, routes) {
   d <- gpxr::load_track_points(file.path("gpx", x))
   
@@ -81,24 +83,61 @@ make_outputs <- function(x, routes) {
 sapply(fs, make_outputs, routes = routes)
 
 make_segments <- function(x, routes) {
+  
   d <- gpxr::load_track_points(file.path("gpx", x))
   
   d <- dplyr::select(d, id = track_seg_point_id)
   
-  if("cuts" %in% names(routes[[x]])) {
+  if(!"cuts" %in% names(routes[[x]])) {
     
-    segments <- lapply(1:(length(features) - 1), function(i, d, features) {
-      message(i)
-      sub <- d[features[i]:features[i+1],]
-      line <- sf::st_sfc(
-        sf::st_linestring(sf::st_coordinates(sf::st_geometry(sub))),
-        crs = sf::st_crs(sub))
-    }, d = d, features = features)
+    routes[[x]]$cuts <- c(1, tail(d$id, 1) - 1)
     
-    return(sf::st_sf(id = seq(1,length(segments)), geom = do.call(c, segments)))
-  } else {
-    return()
   }
   
+  features <- routes[[x]]$cuts
+  
+  segments <- lapply(1:(length(features) - 1), function(i, d, features) {
+    sub <- d[features[i]:features[i+1],]
+    line <- sf::st_sfc(
+      sf::st_linestring(sf::st_coordinates(sf::st_geometry(sub))),
+      crs = sf::st_crs(sub))
+  }, d = d, features = features)
+  
+  return(sf::st_sf(id = seq(1,length(segments)), geom = do.call(c, segments)))
+  
+}
+
+line_version <- lapply(fs, make_segments, routes = routes)
+
+spatial_svg <- function(polygons_sf, lines_sf) {
+  
+  par(mar = c(0,0,0,0))
+  plot(sf::st_buffer(sf::st_geometry(lines_sf), dist = units::set_units(500, "m")), border = NA)
+  for(col_choose in 1:max(polygons_sf$plot_order)) {
+    
+    dat <- dplyr::filter(polygons_sf, plot_order == col_choose)
+    
+    plot(sf::st_geometry(dat), col = dat$fill, border = dat$col, lwd = dat$lwd, add = TRUE)
+  }
+  
+  plot(sf::st_geometry(lines_sf), col = "black", lwd = 3, add = TRUE)  
+  plot(sf::st_geometry(lines_sf), col = "lightgrey", add = TRUE)  
+  
+  start_point <- sf::st_sfc(
+    sf::st_point(c(sf::st_coordinates(lines_sf)[1,1], sf::st_coordinates(lines_sf)[1,2])),
+    crs = sf::st_crs(lines_sf))
+  
+  plot(start_point, pch = 23, bg = "lightgreen", cex = 1.5, add = TRUE)
+  plot(start_point, pch = 23, bg = "lightgreen", cex = .8, add = TRUE)
+  
+  text(sf::st_coordinates(start_point), "start", pos = 4)
+}
+
+polygons_sf <- sf::read_sf("base_map/gilbert_island_polygons.geojson")
+
+for(i in 1:length(fs)) {
+  svglite::svglite(file.path("svg", gsub(".gpx", "_map.svg", fs[i])), width = 4, height = 4)
+  spatial_svg(polygons_sf, line_version[[i]])
+  dev.off()
 }
 
