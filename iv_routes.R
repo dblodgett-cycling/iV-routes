@@ -16,6 +16,24 @@ routes$indieVelo_Northern_Hill_Climb.gpx <- list(cuts = c(1, 1378))
 
 routes$indieVelo_Base_Camp.gpx <- list(cuts = c(6, 1627))
 
+get_color <- function(x, bins = c(-15.1, -5, -3, -1, 0, 1, 3, 5, 8, 15.1)) {
+
+  x <- x * 100
+
+  min <- -15
+  max <- 15
+  
+  x[x < min] <- min
+  x[x > max] <- max
+  
+  breaks <- as.numeric(cut(x, bins))
+
+  c("blue4", "blue", "skyblue", 
+    "springgreen", "greenyellow", 
+    "yellow", "orange", "red", "purple")[breaks]
+
+}
+
 make_outputs <- function(x, routes) {
   d <- gpxr::load_track_points(file.path("gpx", x))
   
@@ -52,8 +70,10 @@ make_outputs <- function(x, routes) {
   
   plot(c(min(d$distance), max(d$distance)), range, col = NA, axes = FALSE)
   
-  lines(d$distance, d$elevation)
+  segments(d$distance, 0, d$distance, d$elevation, col = get_color(d$slope))
 
+  lines(d$distance, d$elevation)
+  
   abline(0, 0, col = "black")
   
   text(0, 0, "0m", pos = 2, offset = 2, xpd = NA)
