@@ -128,7 +128,7 @@ spatial_svg <- function(polygons_sf, lines_sf) {
     sf::st_point(c(sf::st_coordinates(lines_sf)[1,1], sf::st_coordinates(lines_sf)[1,2])),
     crs = sf::st_crs(lines_sf))
   
-  plot(start_point, pch = '\u25b7', cex = 3, add = TRUE)
+  plot(start_point, pch = '\u25b7', cex = .75, add = TRUE)
   plot(start_point, pch = '\u25b7', cex = 1.5, add = TRUE)
   
   # text(sf::st_coordinates(start_point), "start", pos = 4)
