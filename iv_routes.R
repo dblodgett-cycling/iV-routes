@@ -16,21 +16,33 @@ routes$indieVelo_Northern_Hill_Climb.gpx <- list(cuts = c(1, 1378))
 
 routes$indieVelo_Base_Camp.gpx <- list(cuts = c(6, 1627))
 
-get_color <- function(x, bins = c(-15.1, -5, -3, -1, 0, 1, 3, 5, 8, 15.1)) {
+get_color <- function(x, bins = c(-25, -15, -8, -3, -1, 1, 3, 8, 15, 25)) {
 
   x <- x * 100
 
-  min <- -15
-  max <- 15
+  min <- -24.9
+  max <- 24.9
   
   x[x < min] <- min
   x[x > max] <- max
   
-  breaks <- as.numeric(cut(x, bins))
-
-  c("blue4", "blue", "skyblue", 
-    "springgreen", "greenyellow", 
-    "yellow", "orange", "red", "purple")[breaks]
+  breaks <- lapply(1:(length(bins) - 1), function(x) {
+    seq(bins[x], bins[x+1], length.out = 10)
+  })
+  
+  breaks <- unique(do.call(c, breaks))
+  
+  vals <- as.numeric(cut(x, breaks))
+  
+  colorRampPalette(c("#000044",
+                     "#0000dd",
+                     "#00eeee",
+                     "#79c7c6",
+                     "green",
+                     "#c6c779",
+                     "#eeee00",
+                     "#dd0000",
+                     "#440000"))(length(breaks) + 1)[vals]
 
 }
 
@@ -54,7 +66,7 @@ make_outputs <- function(x, routes) {
   
   out <- file.path("svg", gsub("gpx", "svg", x))
   
-  svglite::svglite(out)
+  svglite::svglite(out, width = 6, height = 3)
   
   par(mar = c(1,3,0,0))
   
@@ -69,6 +81,8 @@ make_outputs <- function(x, routes) {
   }
   
   plot(c(min(d$distance), max(d$distance)), range, col = NA, axes = FALSE)
+  
+  d$slope[5:(length(d$slope))-4] <- RcppRoll::roll_mean(d$slope, 5)
   
   segments(d$distance, 0, d$distance, d$elevation, col = get_color(d$slope))
 
@@ -178,3 +192,4 @@ for(i in 1:length(fs)) {
   spatial_svg(polygons_sf, line_version[[i]])
   dev.off()
 }
+
