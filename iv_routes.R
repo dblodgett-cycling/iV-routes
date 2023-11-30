@@ -16,7 +16,7 @@ routes$indieVelo_Northern_Hill_Climb.gpx <- list(cuts = c(1, 1378))
 
 routes$indieVelo_Base_Camp.gpx <- list(cuts = c(6, 1627))
 
-get_color <- function(x, bins = c(-25, -15, -8, -3, -1, 1, 3, 8, 15, 25)) {
+get_color <- function(x, bins = c(-25, -12, -8, -3, -1, 1, 3, 8, 12, 25)) {
 
   x <- x * 100
 
@@ -46,15 +46,43 @@ get_color <- function(x, bins = c(-25, -15, -8, -3, -1, 1, 3, 8, 15, 25)) {
 
 }
 
+# Function to plot color bar
+color.bar <- function(lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='') {
+  scale = (length(lut)-1)/(max-min)
+  
+  plot(c(0,10), c(min,max), type='n', bty='n', xaxt='n', xlab='', yaxt='n', ylab='', main=title)
+  axis(2, ticks, las=1)
+  for (i in 1:(length(lut)-1)) {
+    y = (i-1)/scale + min
+    rect(0,y,10,y+1/scale, col=lut[i], border=NA)
+  }
+}
+
+get_slope <- function(x, y) {
+  l <- length(x)
+  
+  stopifnot(length(y) == l)
+  
+  slope <- (y[1:(l-1)] - y[2:l]) / (x[1:(l-1)] - x[2:l])
+  c(slope, tail(slope, 1))
+}
+
+resample_profile <- function(x, y, s = 30) {
+  x_out <- seq(min(x), max(x), s)
+  approx(x, y, x_out)
+}
+
 make_outputs <- function(x, routes) {
   d <- gpxr::load_track_points(file.path("gpx", x))
   
   if("cuts" %in% names(routes[[x]])) {
-    d <- filter(d, track_seg_point_id > routes[[x]]$cuts[1] & track_seg_point_id < tail(routes[[x]]$cuts, 1))
+    d <- filter(d, track_seg_point_id > routes[[x]]$cuts[1] & 
+                  track_seg_point_id < tail(routes[[x]]$cuts, 1))
   }
   
   d <- gpxr::add_distance(d)
-  d <- dplyr::select(d, id = track_seg_point_id, elevation = ele, distance = distance, slope = slope)
+  d <- dplyr::select(d, id = track_seg_point_id, elevation = ele, 
+                     distance = distance, slope = slope)
   
   out <- file.path("geojson", gsub("gpx", "geojson", x))
   
@@ -66,9 +94,11 @@ make_outputs <- function(x, routes) {
   
   out <- file.path("svg", gsub("gpx", "svg", x))
   
-  svglite::svglite(out, width = 6, height = 3)
+  svglite::svglite(out, width = 7, height = 2.5)
   
-  par(mar = c(1,3,0,0))
+  # dev.new()
+  
+  par(mar = c(1,8,0,0))
   
   if(max(d$elevation) > 200) {
     range <- c(0, 250)
@@ -80,14 +110,15 @@ make_outputs <- function(x, routes) {
     range <- c(0, 100)
   }
   
-  plot(c(min(d$distance), max(d$distance)), range, col = NA, axes = FALSE)
+  plot(c(min(d$distance), max(d$distance)), range, col = NA, axes = FALSE, xlab = NA, ylab = NA)
   
-  d$slope[5:(length(d$slope))-4] <- RcppRoll::roll_mean(d$slope, 5)
+  geom <- approx(d$distance, d$elevation, n = 150)
   
-  segments(d$distance, 0, d$distance, d$elevation, col = get_color(d$slope))
+  segments(geom$x, 0, geom$x, geom$y, 
+           col = get_color(get_slope(geom$x, geom$y)), lwd = 2.8, lend = 2)
 
-  lines(d$distance, d$elevation)
-  
+  lines(geom$x, geom$y, lwd = 2, xlab = NULL)
+
   abline(0, 0, col = "black")
   
   text(0, 0, "0m", pos = 2, offset = 2, xpd = NA)
@@ -110,6 +141,17 @@ make_outputs <- function(x, routes) {
     abline(200, 0, col = "lightgrey", lty = "dashed")
     text(0, 200, "200m", pos = 2, offset = 1.5, xpd = NA)
   }
+  
+  par(new = TRUE, mar = c(0, 0, 0, 0), omd = c(.1, .15, .2, .8))
+  color.bar(colorRampPalette(c("#000044",
+                               "#0000dd",
+                               "#00eeee",
+                               "#79c7c6",
+                               "green",
+                               "#c6c779",
+                               "#eeee00",
+                               "#dd0000",
+                               "#440000"))(40), -25, 25, ticks = c(-25, -12, 0, 12, 25))
   
   dev.off()
 }
@@ -146,7 +188,12 @@ line_version <- lapply(fs, make_segments, routes = routes)
 spatial_svg <- function(polygons_sf, lines_sf) {
   
   par(mar = c(0,0,0,0), family = "Arial Unicode MS")
-  plot(sf::st_buffer(sf::st_geometry(lines_sf), dist = units::set_units(100, "m")), border = NA)
+  
+  domain <- sf::st_as_sfc(sf::st_bbox(
+    sf::st_buffer(sf::st_geometry(lines_sf), dist = units::set_units(100, "m"))
+  ))
+  
+  plot(domain, border = NA)
   
   for(col_choose in 1:max(polygons_sf$plot_order)) {
     
@@ -156,7 +203,7 @@ spatial_svg <- function(polygons_sf, lines_sf) {
   }
   
   plot(sf::st_geometry(lines_sf), col = "black", lwd = 3, add = TRUE)  
-  plot(sf::st_geometry(lines_sf), col = "lightgrey", add = TRUE)  
+  plot(sf::st_geometry(lines_sf), col = "lightgrey", lwd = 1, add = TRUE)
   
   start_point <- sf::st_sfc(
     sf::st_point(c(sf::st_coordinates(lines_sf)[1,1], sf::st_coordinates(lines_sf)[1,2])),
@@ -187,9 +234,11 @@ polygons_sf <- mutate(polygons_sf, fill = case_when(fill == "#F6C18FFF" ~ "#943c
                                                     fill == "#36963BFF" ~ "#3fa644",
                                                     TRUE ~ fill))
 
+polygons_sf <- rmapshaper::ms_simplify(polygons_sf)
+
 for(i in 1:length(fs)) {
   svglite::svglite(file.path("svg", gsub(".gpx", "_map.svg", fs[i])), width = 4, height = 4)
-  spatial_svg(polygons_sf, line_version[[i]])
+  spatial_svg(polygons_sf, rmapshaper::ms_simplify(line_version[[i]], keep = .2))
   dev.off()
 }
 
