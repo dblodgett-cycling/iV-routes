@@ -202,8 +202,8 @@ spatial_svg <- function(polygons_sf, lines_sf) {
     plot(sf::st_geometry(dat), col = dat$fill, border = dat$col, lwd = dat$lwd, add = TRUE)
   }
   
-  plot(sf::st_geometry(lines_sf), col = "black", lwd = 3, add = TRUE)  
-  plot(sf::st_geometry(lines_sf), col = "lightgrey", lwd = 1, add = TRUE)
+  # plot(sf::st_geometry(lines_sf), col = "black", lwd = 3, add = TRUE)  
+  plot(sf::st_geometry(lines_sf), col = "white", lwd = 3, add = TRUE)
   
   start_point <- sf::st_sfc(
     sf::st_point(c(sf::st_coordinates(lines_sf)[1,1], sf::st_coordinates(lines_sf)[1,2])),
