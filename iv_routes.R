@@ -94,11 +94,11 @@ make_outputs <- function(x, routes) {
   
   out <- file.path("svg", gsub("gpx", "svg", x))
   
-  svglite::svglite(out, width = 7, height = 2.5)
+  svglite::svglite(out, width = 4, height = 1.5)
   
   # dev.new()
   
-  par(mar = c(1,8,0,0))
+  par(mar = c(1,0,0,0))
   
   if(max(d$elevation) > 200) {
     range <- c(0, 250)
@@ -114,44 +114,50 @@ make_outputs <- function(x, routes) {
   
   geom <- approx(d$distance, d$elevation, n = 150)
   
+  width <- max(d$distance) / 150
+  
   segments(geom$x, 0, geom$x, geom$y, 
-           col = get_color(get_slope(geom$x, geom$y)), lwd = 2.8, lend = 2)
-
-  lines(geom$x, geom$y, lwd = 2, xlab = NULL)
+           col = get_color(get_slope(geom$x, geom$y)), lwd = 2.8, lend = 1)
+    
+  segments(geom$x, geom$y, 
+           c(geom$x[2:length(geom$x)], tail(geom$x, 1)), c(geom$y[2:length(geom$y)], tail(geom$y, 1)),
+           col = get_color(get_slope(geom$x, geom$y)), lwd = 3)
+  
+  # lines(geom$x, geom$y, lwd = 2, xlab = NULL)
 
   abline(0, 0, col = "black")
   
-  text(0, 0, "0m", pos = 2, offset = 2, xpd = NA)
-    
-  abline(50, 0, col = "lightgrey", lty = "dashed")
+  # text(0, 0, "0m", pos = 2, offset = 2, xpd = NA)
+  #   
+  # abline(50, 0, col = "lightgrey", lty = "dashed")
+  # 
+  # text(0, 50, "50m", pos = 2, offset = 1.5, xpd = NA)
+  # 
+  # if(max(range) > 100) {
+  #   abline(100, 0, col = "lightgrey", lty = "dashed")
+  #   text(0, 100, "100m", pos = 2, offset = 1.5, xpd = NA)
+  # }
+  # 
+  # if(max(range) > 150) {
+  #   abline(150, 0, col = "lightgrey", lty = "dashed")
+  #   text(0, 150, "150m", pos = 2, offset = 1.5, xpd = NA)
+  # }
+  # 
+  # if(max(range) > 200) {
+  #   abline(200, 0, col = "lightgrey", lty = "dashed")
+  #   text(0, 200, "200m", pos = 2, offset = 1.5, xpd = NA)
+  # }
   
-  text(0, 50, "50m", pos = 2, offset = 1.5, xpd = NA)
-  
-  if(max(range) > 100) {
-    abline(100, 0, col = "lightgrey", lty = "dashed")
-    text(0, 100, "100m", pos = 2, offset = 1.5, xpd = NA)
-  }
-  
-  if(max(range) > 150) {
-    abline(150, 0, col = "lightgrey", lty = "dashed")
-    text(0, 150, "150m", pos = 2, offset = 1.5, xpd = NA)
-  }
-  
-  if(max(range) > 200) {
-    abline(200, 0, col = "lightgrey", lty = "dashed")
-    text(0, 200, "200m", pos = 2, offset = 1.5, xpd = NA)
-  }
-  
-  par(new = TRUE, mar = c(0, 0, 0, 0), omd = c(.1, .15, .2, .8))
-  color.bar(colorRampPalette(c("#000044",
-                               "#0000dd",
-                               "#00eeee",
-                               "#79c7c6",
-                               "green",
-                               "#c6c779",
-                               "#eeee00",
-                               "#dd0000",
-                               "#440000"))(40), -25, 25, ticks = c(-25, -12, 0, 12, 25))
+  # par(new = TRUE, mar = c(0, 0, 0, 0), omd = c(.1, .15, .2, .8))
+  # color.bar(colorRampPalette(c("#000044",
+  #                              "#0000dd",
+  #                              "#00eeee",
+  #                              "#79c7c6",
+  #                              "green",
+  #                              "#c6c779",
+  #                              "#eeee00",
+  #                              "#dd0000",
+  #                              "#440000"))(40), -25, 25, ticks = c(-25, -12, 0, 12, 25))
   
   dev.off()
 }
