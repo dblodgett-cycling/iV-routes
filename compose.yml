@@ -1,6 +1,6 @@
 services:
   build-routes:
     build: .
-    volumes: 
+    volumes:
       - "./:/workdir"
-    command: bash -c "cd /workdir && Rscript iv_routes.R"
+    command: Rscript iv_routes.R
