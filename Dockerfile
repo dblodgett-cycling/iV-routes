@@ -1,0 +1,3 @@
+FROM rocker/geospatial
+RUN install2.r rmapshaper
+RUN installGithub.r dblodgett-cycling/gpxr
